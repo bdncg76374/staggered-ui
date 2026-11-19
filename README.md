@@ -66,6 +66,14 @@ pull-to-refresh and "load more" affordances.
 `delayFor` saturates at `maxStagger`, so rows past
 `1 + maxStagger / step` share the same start time.
 
+## Accessibility
+
+`StaggeredListView` reads `MediaQuery.disableAnimations`, so Android "Remove
+animations", iOS "Reduce Motion" and their desktop counterparts skip the
+sequence entirely: rows are laid out at their final position and `replay()`
+jumps to the end. `StaggeredMotion.of(context)` exposes the resolved setting if
+you need to branch on it yourself.
+
 ## Platform notes
 
 - iOS and Android behave identically; the slide offset is a fraction of the row
