@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'stagger.dart';
+import 'staggered_motion.dart';
 
 /// Builds the child for one row, driven by that row's own [animation].
 typedef StaggeredItemBuilder = Widget Function(
@@ -43,6 +44,7 @@ class StaggeredListViewState extends State<StaggeredListView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late StaggerTiming _timing;
+  StaggeredMotion _motion = StaggeredMotion.full;
 
   @override
   void initState() {
@@ -50,6 +52,21 @@ class StaggeredListViewState extends State<StaggeredListView>
     _timing = widget.timing;
     _controller = AnimationController(vsync: this, duration: _timing.totalDuration)
       ..forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final motion = StaggeredMotion.of(context);
+    if (motion == _motion) {
+      return;
+    }
+    _motion = motion;
+    if (motion.enabled) {
+      _controller.forward(from: 0);
+    } else {
+      _controller.value = 1;
+    }
   }
 
   @override
@@ -70,14 +87,21 @@ class StaggeredListViewState extends State<StaggeredListView>
     super.dispose();
   }
 
-  /// Runs the entrance again from the first row.
-  void replay() => _controller.forward(from: 0);
+  /// Runs the entrance again from the first row, or jumps to the end state
+  /// when animations are disabled.
+  void replay() {
+    if (_motion.enabled) {
+      _controller.forward(from: 0);
+    } else {
+      _controller.value = 1;
+    }
+  }
 
   Widget _animatedRow(BuildContext context, int index) {
     final animation =
         CurvedAnimation(parent: _controller, curve: _timing.intervalFor(index));
     final child = widget.itemBuilder(context, index, animation);
-    if (!widget.translate) {
+    if (!widget.translate || !_motion.translate) {
       return FadeTransition(opacity: animation, child: child);
     }
     return SlideTransition(
